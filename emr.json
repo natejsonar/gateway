@@ -1,0 +1,374 @@
+[
+  {
+    "global_settings": {
+      "sonar_URI": "mongodb://CN=admin@localhost:27117/admin?authSource=$external&authMechanism=PLAIN&certfile=/etc/sonar/ssl/client/admin/cert.pem",
+      "target_db": "sonargd"
+    }
+  },
+  {
+    "global_field_translations": {
+      "Failed Sqls": {
+        "generate": true,
+        "$expr": {
+          "$cond": [
+            {
+              "$eq": [
+                "$result",
+                "0"
+              ]
+            },
+            "1",
+            "0"
+          ]
+        },
+        "type": 16
+      },
+      "Successful Sqls": {
+        "generate": true,
+        "$expr": {
+          "$cond": [
+            {
+              "$eq": [
+                "$result",
+                "0"
+              ]
+            },
+            "0",
+            "1"
+          ]
+        },
+        "type": 16
+      },
+      "Objects and Verbs": {
+        "generate": true,
+        "$expr": {
+          "$concat": [
+            "$resource",
+            " ",
+            "$access"
+          ]
+        }
+      },
+      "Session Id": {
+        "generate": true,
+        "default": "null",
+        "type": 10
+      },
+      "UTC Offset": {
+        "generate": true,
+        "default": "0",
+        "type": 16
+      },
+      "Client Host Name": {
+        "generate": true,
+        "$expr": {
+          "$hostname": [
+            "$cliIP"
+          ]
+        },
+        "type": 2
+      },
+      "reqUser": {
+        "rename": "DB User Name"
+      },
+      "Analyzed Client IP": {
+        "generate": true,
+        "$expr": "$cliIP"
+      },
+      "Server IP": {
+        "generate": true,
+        "$expr": {
+          "$IP_address": [
+            "$SonarG Source"
+          ]
+        }
+      },
+      "timestamp": {
+        "redact": true
+      },
+      "id": {
+        "rename": "log_id"
+      },
+      "OS User": {
+        "generate": true,
+        "default": ""
+      },
+      "reqData": {
+        "rename": "Full Sql"
+      },
+      "logType": {
+        "rename": "Server Type"
+      }
+    }
+  },
+  {
+    "output_connection": {
+      "event_format": {
+        "standard": "JSON"
+      },
+      "default_collection": "instance",
+      "unique_label": "instance_hadoop",
+      "group_label": "instance",
+      "collection_selectors": {
+        "select_by_key_value": {
+          "repo": "hadoopdev"
+        }
+      }
+    },
+    "evtTime": {
+      "rename": "Period Start"
+    },
+    "Instance ID": {
+      "generate": true,
+      "$expr": "$rand"
+    },
+    "Service Name": {
+      "generate": true,
+      "default": "Hadoop"
+    }
+  },
+  {
+    "output_connection": {
+      "event_format": {
+        "standard": "JSON"
+      },
+      "default_collection": "instance",
+      "unique_label": "instance_hive",
+      "group_label": "instance",
+      "collection_selectors": {
+        "select_by_key_value": {
+          "repo": "hivedev"
+        }
+      }
+    },
+    "evtTime": {
+      "rename": "Period Start"
+    },
+    "Instance ID": {
+      "generate": true,
+      "$expr": "$rand"
+    },
+    "Service Name": {
+      "generate": true,
+      "default": "Hive"
+    },
+    "Database Name": {
+      "generate": false,
+      "$expr": {
+        "$regex": [
+          "$resource",
+          "^(.*?)\\/"
+        ]
+      }
+    }
+  },
+  {
+    "output_connection": {
+      "event_format": {
+        "standard": "JSON"
+      },
+      "default_collection": "instance",
+      "unique_label": "instance_hbase",
+      "group_label": "instance",
+      "collection_selectors": {
+        "select_by_key_value": {
+          "repo": "hbasedev"
+        }
+      }
+    },
+    "evtTime": {
+      "rename": "Period Start"
+    },
+    "Instance ID": {
+      "generate": true,
+      "$expr": "$rand"
+    },
+    "Service Name": {
+      "generate": true,
+      "default": "Hbase"
+    }
+  },
+  {
+    "output_connection": {
+      "event_format": {
+        "standard": "JSON"
+      },
+      "default_collection": "exception",
+      "unique_label": "exception_hadoop",
+      "group_label": "exception",
+      "collection_selectors": {
+        "select_by_key_value": {
+          "$and": [
+            {
+              "repo": "hadoopdev"
+            },
+            {
+              "result": "/0/"
+            }
+          ]
+        }
+      }
+    },
+    "evtTime": {
+      "rename": "Exception Timestamp"
+    },
+    "Exception ID": {
+      "generate": true,
+      "$expr": "$rand"
+    },
+    "Service Name": {
+      "generate": true,
+      "default": "Hadoop"
+    },
+    "Server Host Name": {
+      "generate": true,
+      "$expr": "$SonarG Source"
+    },
+    "SQL string that caused the Exception": {
+      "generate": true,
+      "$expr": "$reqData"
+    },
+    "Destination Address": {
+      "generate": true,
+      "$expr": "$cliIP"
+    },
+    "Link to more information about the exception": {
+      "generate": true,
+      "default": ""
+    },
+    "Source Address": {
+      "generate": true,
+      "$expr": "$SonarG Source"
+    },
+    "Exception Description": {
+      "generate": true,
+      "default": ""
+    },
+    "Exception Type ID": {
+      "generate": true,
+      "default": ""
+    }
+  },
+  {
+    "output_connection": {
+      "event_format": {
+        "standard": "JSON"
+      },
+      "default_collection": "exception",
+      "unique_label": "exception_hive",
+      "group_label": "exception",
+      "collection_selectors": {
+        "select_by_key_value": {
+          "$and": [
+            {
+              "repo": "hivedev"
+            },
+            {
+              "result": "/0/"
+            }
+          ]
+        }
+      }
+    },
+    "evtTime": {
+      "rename": "Exception Timestamp"
+    },
+    "Exception ID": {
+      "generate": true,
+      "$expr": "$rand"
+    },
+    "Service Name": {
+      "generate": true,
+      "default": "Hive"
+    },
+    "Server Host Name": {
+      "generate": true,
+      "$expr": "$SonarG Source"
+    },
+    "SQL string that caused the Exception": {
+      "generate": true,
+      "$expr": "$reqData"
+    },
+    "Destination Address": {
+      "generate": true,
+      "$expr": "$cliIP"
+    },
+    "Link to more information about the exception": {
+      "generate": true,
+      "default": ""
+    },
+    "Source Address": {
+      "generate": true,
+      "$expr": "$SonarG Source"
+    },
+    "Exception Description": {
+      "generate": true,
+      "default": ""
+    },
+    "Exception Type ID": {
+      "generate": true,
+      "default": ""
+    }
+  },
+  {
+    "output_connection": {
+      "event_format": {
+        "standard": "JSON"
+      },
+      "default_collection": "exception",
+      "unique_label": "exception_hbase",
+      "group_label": "exception",
+      "collection_selectors": {
+        "select_by_key_value": {
+          "$and": [
+            {
+              "repo": "hbasedev"
+            },
+            {
+              "result": "/0/"
+            }
+          ]
+        }
+      }
+    },
+    "evtTime": {
+      "rename": "Exception Timestamp"
+    },
+    "Exception ID": {
+      "generate": true,
+      "$expr": "$rand"
+    },
+    "Service Name": {
+      "generate": true,
+      "default": "Hbase"
+    },
+    "Server Host Name": {
+      "generate": true,
+      "$expr": "$SonarG Source"
+    },
+    "SQL string that caused the Exception": {
+      "generate": true,
+      "$expr": "$reqData"
+    },
+    "Destination Address": {
+      "generate": true,
+      "$expr": "$cliIP"
+    },
+    "Link to more information about the exception": {
+      "generate": true,
+      "default": ""
+    },
+    "Source Address": {
+      "generate": true,
+      "$expr": "$SonarG Source"
+    },
+    "Exception Description": {
+      "generate": true,
+      "default": ""
+    },
+    "Exception Type ID": {
+      "generate": true,
+      "default": ""
+    }
+  }
+]

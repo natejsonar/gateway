@@ -1,0 +1,432 @@
+[
+  {
+    "global_settings": {
+      "do_not_ingest": [
+        "session"
+      ],
+      "sonar_URI": "mongodb://CN=admin@localhost:27117/admin?authSource=$external&authMechanism=PLAIN&certfile=/etc/sonar/ssl/client/admin/cert.pem",
+      "target_db": "sonargd",
+      "input_module": {
+        "type": "dynamic",
+        "name": "libsonarcloudwatch.so",
+        "settings": {
+          "service": "gateway-aws@s3.service",
+          "state file": "/var/lib/sonar/gateway/cloud/aws/s3.sqlite",
+          "credentials": "/etc/sonar/credentials/.aws/credentials",
+          "threads": 4,
+          "frequency seconds": 10,
+          "download all past messages for new streams": false
+        }
+      }
+    }
+  },
+  {
+    "lookup_tables": {
+      "tables": [
+        {
+          "error_to_description": {
+            "db_name": "sonargd",
+            "coll_name": "aws_s3_error_codes",
+            "query": [
+              {
+                "$project": {
+                  "_id": 0,
+                  "__gateway_key": "$ErrorCode",
+                  "__gateway_value": "$Description"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "error_to_http_code": {
+            "db_name": "sonargd",
+            "coll_name": "aws_s3_error_codes",
+            "query": [
+              {
+                "$project": {
+                  "_id": 0,
+                  "__gateway_key": "$ErrorCode",
+                  "__gateway_value": "$HTTP Status Code"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "global_field_translations": {
+      "SonarGateway Service": {
+        "generate": true,
+        "default": "gateway-aws@s3.service"
+      },
+      "Service Name": {
+        "generate": true,
+        "$expr": "$eventSource"
+      },
+      "Source Program": {
+        "generate": true,
+        "$expr": "$userAgent"
+      },
+      "DB User Name": {
+        "generate": true,
+        "$expr": {
+          "$cond": [
+            {
+              "$regex": [
+                "$userAgent",
+                "user:[-a-zA-Z0-9]*,"
+              ]
+            },
+            {
+              "$regex": [
+                "$userAgent",
+                "user:([-a-zA-Z0-9]*),"
+              ]
+            },
+            "$userIdentity.userName"
+          ]
+        }
+      },
+      "Analyzed Client IP": {
+        "generate": true,
+        "$expr": "$sourceIPAddress"
+      },
+      "Client Host Name": {
+        "generate": true,
+        "eval": [
+          "hostname",
+          "sourceIPAddress"
+        ]
+      },
+      "SonarG Source": {
+        "generate": true,
+        "$expr": "$awsRegion"
+      },
+      "OS User": {
+        "generate": true,
+        "$expr": "$userIdentity.userName"
+      },
+      "UTC Offset": {
+        "generate": true,
+        "default": "0",
+        "type": 1
+      },
+      "Session Id": {
+        "generate": true,
+        "$expr": {
+          "$hash": "$userIdentity"
+        }
+      },
+      "sourceIPAddress" : {
+        "rename":"Server IP"
+      }
+    }
+  },
+  {
+    "output_connection": {
+      "event_format": {
+        "standard": "JSON"
+      },
+      "default_collection": "instance",
+      "unique_label": "instance_bucket",
+      "group_label": "instance",
+      "collection_selectors": {
+        "select_by_expr": {
+          "$expr": {
+            "$and": [
+              {
+                "$not": [
+                  {
+                    "$exists": "$errorCode"
+                  }
+                ]
+              },
+              {
+                "$in": [
+                  "$eventName",
+                  [
+                    "DeleteBucket",
+                    "DeleteBucketCors",
+                    "DeleteBucketEncryption",
+                    "DeleteBucketLifecycle",
+                    "DeleteBucketPolicy",
+                    "DeleteBucketReplication",
+                    "DeleteBucketTagging",
+                    "DeleteBucketWebsite",
+                    "GetBucketAcl",
+                    "GetBucketCors",
+                    "GetBucketEncryption",
+                    "GetBucketLifecycle",
+                    "GetBucketLocation",
+                    "GetBucketLogging",
+                    "GetBucketNotification",
+                    "GetBucketPolicy",
+                    "GetBucketReplication",
+                    "GetBucketRequestPay",
+                    "GetBucketTagging",
+                    "GetBucketVersioning",
+                    "GetBucketWebsite",
+                    "ListBuckets",
+                    "CreateBucket",
+                    "PutBucketAcl",
+                    "PutBucketCors",
+                    "PutBucketEncryption",
+                    "PutBucketLifecycle",
+                    "PutBucketLogging",
+                    "PutBucketNotification",
+                    "PutBucketPolicy",
+                    "PutBucketReplication",
+                    "PutBucketRequestPay",
+                    "PutBucketTagging",
+                    "PutBucketVersioning",
+                    "PutBucketWebsite "
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    "Instance ID": {
+      "generate": true,
+      "$expr": "$eventID"
+    },
+    "Server Type": {
+      "generate": true,
+      "$expr": "$eventSource"
+    },
+    "Period Start": {
+      "generate": true,
+      "$expr": "$eventTime"
+    },
+    "Successful Sqls": {
+      "generate": true,
+      "default": "1",
+      "type": 16
+    },
+    "Failed Sqls": {
+      "generate": true,
+      "default": "0",
+      "type": 16
+    },
+    "Objects and Verbs": {
+      "generate": true,
+      "$expr": {
+        "$concat": [
+          "$eventName",
+          " ",
+          "$requestParameters.bucketName"
+        ]
+      }
+    }
+  },
+  {
+    "output_connection": {
+      "event_format": {
+        "standard": "JSON"
+      },
+      "default_collection": "instance",
+      "unique_label": "instance_object",
+      "group_label": "instance",
+      "collection_selectors": {
+        "select_by_expr": {
+          "$expr": {
+            "$and": [
+              {
+                "$not": [
+                  {
+                    "$exists": "$errorCode"
+                  }
+                ]
+              },
+              {
+                "$in": [
+                  "$eventName",
+                  [
+                    "ListObjects",
+                    "ListObjectVersions",
+                    "PutObject",
+                    "GetObject",
+                    "HeadObject",
+                    "CopyObject",
+                    "GetObjectAcl",
+                    "PutObjectAcl",
+                    "CreateMultipartUpload",
+                    "ListParts",
+                    "UploadPart",
+                    "CompleteMultipartUpload",
+                    "AbortMultipartUpload",
+                    "UploadPartCopy",
+                    "RestoreObject",
+                    "DeleteObject",
+                    "DeleteObjects",
+                    "GetObjectTorrent",
+                    "SelectObjectContent"
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    "Instance ID": {
+      "generate": true,
+      "$expr": "$eventID"
+    },
+    "Server Type": {
+      "generate": true,
+      "$expr": "$eventSource"
+    },
+    "Successful Sqls": {
+      "generate": true,
+      "default": "1",
+      "type": 16
+    },
+    "Failed Sqls": {
+      "generate": true,
+      "default": "0",
+      "type": 16
+    },
+    "Period Start": {
+      "generate": true,
+      "$expr": "$eventTime"
+    },
+    "Objects and Verbs": {
+      "generate": true,
+      "$expr": {
+        "$concat": [
+          "$eventName",
+          " ",
+          "$requestParameters.bucketName"
+        ]
+      }
+    }
+  },
+  {
+    "output_connection": {
+      "event_format": {
+        "standard": "JSON"
+      },
+      "default_collection": "instance",
+      "unique_label": "instance_else",
+      "group_label": "instance",
+      "collection_selectors": {
+        "select_by_expr": {
+          "$expr": {
+            "$not": [
+              {
+                "$exists": "$errorCode"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "Instance ID": {
+      "generate": true,
+      "$expr": "$eventID"
+    },
+    "Server Type": {
+      "generate": true,
+      "$expr": "$eventSource"
+    },
+    "Successful Sqls": {
+      "generate": true,
+      "default": "1",
+      "type": 16
+    },
+    "Failed Sqls": {
+      "generate": true,
+      "default": "0",
+      "type": 16
+    },
+    "Period Start": {
+      "generate": true,
+      "$expr": "$eventTime"
+    },
+    "Objects and Verbs": {
+      "generate": true,
+      "$expr": {
+        "$concat": [
+          "$eventName",
+          " ",
+          "$requestParameters.bucketName"
+        ]
+      }
+    }
+  },
+  {
+    "output_connection": {
+      "event_format": {
+        "standard": "JSON"
+      },
+      "default_collection": "exception",
+      "unique_label": "exception",
+      "group_label": "exception",
+      "collection_selectors": {
+        "select_by_expr": {
+          "$expr": {
+            "$exists": "$errorCode"
+          }
+        }
+      }
+    },
+    "Exception Timestamp": {
+      "generate": true,
+      "$expr": "$eventTime"
+    },
+    "Database Error Text": {
+      "generate": true,
+      "$expr": "$errorMessage"
+    },
+    "Destination Address": {
+      "generate": true,
+      "$expr": "$userAgent"
+    },
+    "Exception Description": {
+      "generate": true,
+      "$expr": {
+        "$lookup": [
+          "error_to_description",
+          "$errorCode",
+          "$errorCode"
+        ]
+      }
+    },
+    "Exception ID": {
+      "generate": true,
+      "$expr": "$eventID"
+    },
+    "Exception Type ID": {
+      "generate": true,
+      "$expr": {
+        "$lookup": [
+          "error_to_http_code",
+          "$errorCode",
+          "N/A"
+        ]
+      }
+    },
+    "Source Address": {
+      "generate": true,
+      "$expr": "$sourceIPAddress"
+    },
+    "User Name": {
+      "generate": true,
+      "$expr": "$userIdentity.userName"
+    },
+    "Database Protocol": {
+      "generate": true,
+      "$expr": "$userIdentity.type"
+    },
+    "SQL string that caused the Exception": {
+      "generate": true,
+      "$expr": "$errorMessage"
+    }
+  }
+]
